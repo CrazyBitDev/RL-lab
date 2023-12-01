@@ -27,7 +27,8 @@ Python virtual environments users (venv) can avoid the Miniconda installation. T
 Following the link to the code snippets for the lessons:
 
 **First Semester**
-- [ ] Lesson 1: MDP and Gym Environments [Code!](lessons/lesson_1_code.py) [Results!](results/lesson_1_results.txt) [Slides!](slides/slides_lesson_1.pdf)
+- [x] Lesson 1: MDP and Gym Environments [Code!](lessons/lesson_1_code.py) [Results!](results/lesson_1_results.txt) [Slides!](slides/slides_lesson_1.pdf)
+- [ ] Lesson 2: Multi-Armed Bandit [Code!](lessons/lesson_2_code.py) [Results!](results/lesson_2_results.txt) [Slides!](slides/slides_lesson_2.pdf)
 
 ## Tutorials
 This repo includes a set of introductory tutorials to help accomplish the exercises. In detail, we provide the following Jupyter notebook that contains the basic instructions for the lab:
