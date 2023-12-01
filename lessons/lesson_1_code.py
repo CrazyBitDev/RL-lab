@@ -2,6 +2,7 @@ import os, sys, numpy
 module_path = os.path.abspath(os.path.join('../tools'))
 if module_path not in sys.path: sys.path.append(module_path)
 from DangerousGridWorld import GridWorld
+from random import random
 
 
 def random_dangerous_grid_world( environment ):
@@ -18,11 +19,18 @@ def random_dangerous_grid_world( environment ):
 	#
 	# YOUR CODE HERE!
 	#
+	current_state = environment.start_state
+	trajectory.append(environment.state_to_pos(current_state))
+
 	for step in range(10):
-		#
-		# YOUR CODE HERE!
-		#
-		if False: break # <- Hint: check if the state is terminal
+		
+		action = round(random()*environment.action_space) - 1
+
+		current_state = environment.sample(action, current_state)
+
+		trajectory.append(environment.state_to_pos(current_state))
+
+		if environment.is_terminal(current_state): break # <- Hint: check if the state is terminal
 	
 	return trajectory
 
@@ -64,33 +72,46 @@ class RecyclingRobot():
 		self.r_wait = 0.2
 
 		# Defining the environment variables
-		self.observation_space = None
-		self.action_space = None
-		self.actions = None
-		self.states = None
+		self.observation_space = 2
+		self.action_space = 3
+		self.actions = {0: 'SEARCH', 1: 'WAIT', 2: 'RECHARGE'}
+		self.states = {0: 'LOW', 1: 'HIGH'}
+
+		self.state = 1
 
 
 	def reset( self ):
-		#
-		# YOUR CODE HERE!
-		#
+		
+		self.state = 1
+
 		return self.state
 
 
 	def step( self, action ):
 
 		reward = 0
-		#
-		# YOUR CODE HERE!
-		#
+		
+		if action == 0:
+			if self.state == 1:
+				reward = self.r_search
+				if random() > self.alfa:
+					self.state = 0
+			else:
+				if random() > self.beta:
+					self.state = 1
+					reward = -3
+				else:
+					reward = self.r_search
+		elif action == 1:
+			reward = self.r_wait
+		elif action == 2:
+			self.state = 1
+
 		return self.state, reward, False, None
 
 
 	def render( self ):
-
-		#
-		# YOUR CODE HERE!
-		#
+		print(f"CURRENT STATE: {self.state}")
 		return True
 
 
@@ -105,7 +126,6 @@ def main():
 	env.render()
 	random_trajectory = random_dangerous_grid_world( env )
 	print( "\nRandom trajectory generated:", random_trajectory )
-
 
 	print( "\nB) Custom Environment: Recycling Robot" )
 	env = RecyclingRobot()
