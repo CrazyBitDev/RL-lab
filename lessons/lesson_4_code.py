@@ -18,11 +18,45 @@ def on_policy_mc( environment, maxiters=5000, eps=0.3, gamma=0.99 ):
 		policy: 1-d dimensional array of action identifiers where index `i` corresponds to state id `i`
 	"""
 
-	p = [[0 for _ in range(environment.action_space)] for _ in range(environment.observation_space)]   
+	p = [[0 for _ in range(environment.action_space)] for _ in range(environment.observation_space)]
 	Q = [[0 for _ in range(environment.action_space)] for _ in range(environment.observation_space)]
-	#
-	# YOUR CODE HERE!
-	#
+	returns = [[[] for _ in range(environment.action_space)] for _ in range(environment.observation_space)]
+
+	for s in range(environment.observation_space):
+		action = numpy.random.randint(0, environment.action_space)
+		for a in range(environment.action_space):
+			if a == action:
+				p[s][a] = 1 - eps + eps/environment.action_space
+			else:
+				p[s][a] = eps/environment.action_space
+
+	for _ in range(maxiters):
+		episodes = environment.sample_episode(p)
+		G = 0
+		for t in range(len(episodes)-2, -1, -1):
+
+			st = episodes[t][0]
+			at = episodes[t][1]
+
+			G = gamma * G + episodes[t+1][2]
+
+			"""found = False
+			for previous_episode in episodes[:t]:
+				if previous_episode[0] == st and previous_episode[1] == at:
+					found = True
+			
+			if not found:"""
+
+			returns[st][at].append(G)
+			Q[st][at] = numpy.mean(returns[st][at])
+
+			A = numpy.argmax(Q[st])
+
+			for a in range(environment.action_space):
+				p[st][a] = (1 - eps + eps / environment.action_space) if a == A else eps/environment.action_space
+				
+
+
 	deterministic_policy = [numpy.argmax(p[state]) for state in range(environment.observation_space)]	
 	return deterministic_policy
 
