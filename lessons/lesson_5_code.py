@@ -40,9 +40,27 @@ def q_learning(environment, episodes, alpha, gamma, expl_func, expl_param):
 	q = numpy.zeros((environment.observation_space, environment.action_space))  # Q(s, a)
 	rews = numpy.zeros(episodes)
 	lengths = numpy.zeros(episodes)
-	#
-	# YOUR CODE HERE!
-	#
+	
+	for episode in range(episodes):
+		s = environment.random_initial_state()
+
+		while True:
+
+			a = expl_func(q, s, expl_param)
+
+			s1 = environment.sample(a, state=s)
+			r = environment.R[s1]
+
+			q[s, a] += alpha * (r + gamma * q[s1].max() - q[s, a])
+
+			s = s1
+
+			rews[episode] += r
+			lengths[episode] += 1
+
+			if environment.is_terminal(s):
+				break
+
 	policy = q.argmax(axis=1) # q.argmax(axis=1) automatically extract the policy from the q table
 	return policy, rews, lengths
 
@@ -66,9 +84,31 @@ def sarsa(environment, episodes, alpha, gamma, expl_func, expl_param):
 	q = numpy.zeros((environment.observation_space, environment.action_space))  # Q(s, a)
 	rews = numpy.zeros(episodes)
 	lengths = numpy.zeros(episodes)
-	#
-	# YOUR CODE HERE!
-	#	
+	
+
+	for episode in range(episodes):
+		s = environment.random_initial_state()
+		a = expl_func(q, s, expl_param)
+
+		while True:
+
+			s1 = environment.sample(a, state=s)
+			r = environment.R[s1]
+
+			a1 = expl_func(q, s1, expl_param)
+
+			q[s, a] += alpha * (r + gamma * q[s1, a1] - q[s, a])
+
+			s = s1
+			a = a1
+
+			rews[episode] += r
+			lengths[episode] += 1
+
+			if environment.is_terminal(s):
+				break
+
+
 	policy = q.argmax(axis=1) # q.argmax(axis=1) automatically extract the policy from the q table
 	return policy, rews, lengths
 
