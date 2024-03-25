@@ -32,11 +32,14 @@ Following the link to the code snippets for the lessons:
 - [x] Lesson 3: Value/Policy Iteration [Slides](slides/slides_lesson_3.pdf), [Code](lessons/lesson_3_code.py), [Results](results/lesson_3_results.txt)
 - [x] Lesson 4: Monte Carlo RL methods [Slides](slides/slides_lesson_4.pdf), [Code](lessons/lesson_4_code.py), [Results](results/lesson_4_results.txt)
 - [x] Lesson 5: Temporal difference methods [Slides](slides/slides_lesson_5.pdf), [Code](lessons/lesson_5_code.py), [Results](results/lesson_5_results.txt)
-- [ ] Lesson 6: Dyna-Q [Slides](slides/slides_lesson_6.pdf), [Code](lessons/lesson_6_code.py), [Results](results/lesson_6_results.txt)
+- [x] Lesson 6: Dyna-Q [Slides](slides/slides_lesson_6.pdf), [Code](lessons/lesson_6_code.py), [Results](results/lesson_6_results.txt)
+- [ ] Lesson 7: Tensorflow-PyTorch and Deep Neural Networks [Slides](slides/slides_lesson_7.pdf), [Code](lessons/lesson_7_code.py), [Results](results/lesson_7_results.txt)
 
 ## Tutorials
 This repo includes a set of introductory tutorials to help accomplish the exercises. In detail, we provide the following Jupyter notebook that contains the basic instructions for the lab:
 - **Tutorial 1 - Gym Environment:** [Here!](tutorials/tutorial_environment.ipynb)
+- **Tutorial 2 - TensorFlow (Keras):** [Here!](tutorials/tutorial_tensorflow.ipynb)
+- **Tutorial 3 - PyTorch:** [Here!](tutorials/tutorial_pytorch.ipynb)
 
 
 ## Contact information
