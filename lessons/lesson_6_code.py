@@ -39,9 +39,49 @@ def dynaQ( environment, maxiters=250, n=10, eps=0.3, alfa=0.3, gamma=0.99 ):
 
 	Q = numpy.zeros((environment.observation_space, environment.action_space))
 	M = numpy.array([[[None, None] for _ in range(environment.action_space)] for _ in range(environment.observation_space)])
-	#
-	# YOUR CODE HERE!
-	#
+	
+	for _ in range(maxiters):
+		"""
+		s = environment.random_initial_state()
+		a = epsilon_greedy(Q, s, eps)
+		s1 = environment.sample(a, s)
+		r = environment.R[s1]
+
+		Q[s, a] += alfa * ( r + gamma * Q[s1].max() - Q[s, a] )
+
+		M[s, a] = [r, s1]
+
+		for _ in range(n):
+			idxs = numpy.where(numpy.all(M != None, axis=-1))
+			idx = numpy.random.choice( len(idxs[0]) )
+			s = idxs[0][idx]
+			a = idxs[1][idx]
+			[r, s1] = M[s, a]
+			Q[s, a] += alfa * ( r + gamma * Q[s1].max() - Q[s, a] )
+		"""
+		s = environment.start_state
+		while not environment.is_terminal(s):
+			a = epsilon_greedy(Q, s, eps)
+			s1 = environment.sample(a, s)
+			r = environment.R[s1]
+
+			Q[s, a] += alfa * ( r + gamma * Q[s1].max() - Q[s, a] )
+
+			M[s, a] = [r, s1]
+			
+			s = s1
+
+			for _ in range(n):
+				idxs = numpy.where(numpy.all(M != None, axis=-1))
+				idx = numpy.random.choice( len(idxs[0]) )
+				temp_s = idxs[0][idx]
+				a = idxs[1][idx]
+				[r, s1] = M[temp_s, a]
+				Q[temp_s, a] += alfa * ( r + gamma * Q[s1].max() - Q[temp_s, a] )
+				
+
+
+
 	policy = Q.argmax(axis=1) 
 	return policy
 
