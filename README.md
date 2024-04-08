@@ -33,7 +33,11 @@ Following the link to the code snippets for the lessons:
 - [x] Lesson 4: Monte Carlo RL methods [Slides](slides/slides_lesson_4.pdf), [Code](lessons/lesson_4_code.py), [Results](results/lesson_4_results.txt)
 - [x] Lesson 5: Temporal difference methods [Slides](slides/slides_lesson_5.pdf), [Code](lessons/lesson_5_code.py), [Results](results/lesson_5_results.txt)
 - [x] Lesson 6: Dyna-Q [Slides](slides/slides_lesson_6.pdf), [Code](lessons/lesson_6_code.py), [Results](results/lesson_6_results.txt)
-- [ ] Lesson 7: Tensorflow-PyTorch and Deep Neural Networks [Slides](slides/slides_lesson_7.pdf), [Code](lessons/lesson_7_code.py), [Results](results/lesson_7_results.txt)
+
+**Second Semester**
+- [x] Lesson 7: Tensorflow-PyTorch and Deep Neural Networks [Slides](slides/slides_lesson_7.pdf), [Code](lessons/lesson_7_code.py), [Results](results/lesson_7_results.txt)
+- [ ] Lesson 8: Deep Q-Network [Slides](slides/slides_lesson_8.pdf), [Code](lessons/lesson_8_code.py), [Results](results/lesson_8_result.png)
+
 
 ## Tutorials
 This repo includes a set of introductory tutorials to help accomplish the exercises. In detail, we provide the following Jupyter notebook that contains the basic instructions for the lab:

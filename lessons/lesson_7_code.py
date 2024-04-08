@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.distributions as distributions
 import torch.nn.functional as F
-import torch.optim as optim
 import matplotlib.pyplot as plt
 from DangerousGridWorld import GridWorld
 
