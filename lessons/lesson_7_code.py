@@ -68,9 +68,17 @@ def find_minimum_keras(objective_function, n_iter=5000):
 	x = tf.Variable(0.0, name='x')
 	y = tf.Variable(0.0, name='y')
 	optimizer = tf.keras.optimizers.SGD( learning_rate=0.001 )
-	#
-	# YOUR CODE HERE!
-	#
+	
+	for epoch in range(n_iter):
+
+		with tf.GradientTape() as tape:
+
+			objective = objective_function(x, y)
+
+			gradient = tape.gradient(objective, [x, y])
+
+			optimizer.apply_gradients( zip(gradient, [x, y]) )
+
 	return x.numpy(), y.numpy()
 	
 
@@ -93,10 +101,17 @@ def find_minimum_torch(objective_function, n_iter=5000):
 	y = torch.tensor([0.0], requires_grad=True)
 
 	optimizer = optim.SGD([x, y], lr=0.001)
-	#
-	# YOUR CODE HERE!
-	#
-	return x.numpy(), y.numpy()
+	
+	for _ in range(n_iter):
+
+		objective = objective_function(x, y)
+
+		optimizer.zero_grad()
+		objective.backward()
+		optimizer.step()
+
+
+	return x.item(), y.item()
 
 	
 def create_DNN_keras(nInputs, nOutputs, nLayer, nNodes):
@@ -116,9 +131,12 @@ def create_DNN_keras(nInputs, nOutputs, nLayer, nNodes):
 	
 	# Initialize the neural network
 	model = Sequential()
-	#
-	# YOUR CODE HERE!
-	#
+	
+	model.add(Dense(nNodes, input_dim=nInputs, activation="relu"))
+	for _ in range(nLayer):
+		model.add(Dense(nNodes, activation="relu"))
+	model.add(Dense(nOutputs, activation="linear"))
+
 	return model
 
 
@@ -137,16 +155,21 @@ class TorchModel(nn.Module):
 	# Initialize the neural network
 	def __init__(self, nInputs, nOutputs, nLayer, nNodes):
 		super(TorchModel, self).__init__()
+
+		self.hidden_layers = nLayer
+
 		self.fc1 = nn.Linear(nInputs, nNodes)
-		#
-		# YOUR CODE HERE!
-		#
+		
+		for layer_idx in range(2, nLayer+2):
+			self.add_module(f"fc{layer_idx}", nn.Linear(nNodes, nNodes))
+
 		self.output = nn.Linear(nNodes, nOutputs)
 
 	def forward(self, x):
-		#
-		# YOUR CODE HERE!
-		#
+		x = F.relu(self.fc1(x))
+		for layer_idx in range(2, self.hidden_layers+2):
+			x = F.relu(self[f"fc{layer_idx}"](x))
+		x = self.output(x)
 		return x
 	
 	
@@ -168,9 +191,20 @@ def collect_random_trajectories(env, num_episodes=10):
 
 	for _ in range(num_episodes):
 		state = env.random_initial_state()
-		#
-		# YOUR CODE HERE!
-		#
+		
+		while True:
+			action = np.random.randint(0, 4)
+			next_state = env.sample(action, state)
+			reward = env.R[next_state]
+
+			done = 1 if env.is_terminal(next_state) else 0
+		
+			memory_buffer.append( [ state, action, next_state, reward, done])
+
+			if done == 1:
+				break
+
+			state = next_state
 		
 	return np.array(memory_buffer)
 
