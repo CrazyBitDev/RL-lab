@@ -7,6 +7,7 @@ from tensorflow.keras.layers import Dense
 import gymnasium, collections
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import seaborn as sns
 import pandas as pd
@@ -50,17 +51,22 @@ class TorchModel(nn.Module):
 	def __init__(self, nInputs, nOutputs, nLayer, nNodes):
 		super(TorchModel, self).__init__()
 		self.fc1 = nn.Linear(nInputs, nNodes)
-		#
-		# YOUR CODE HERE!
-		#
+		
+		self.hidden_layers = nLayer
+		for i in range(nLayer):
+			setattr(self, f"fc{i+2}", nn.Linear(nNodes, nNodes))
+
 		self.output = nn.Linear(nNodes, nOutputs)
 
 	def forward(self, x):
-		#
-		# YOUR CODE HERE!
-		#
-		return x
+		x = F.relu(self.fc1(x))
 
+		for i in range(self.hidden_layers):
+			x = F.relu(getattr(self, f"fc{i+2}")(x))
+
+		x = self.output(x)
+
+		return x
 
 def mse(network, dataset_input, target):
 	"""
@@ -99,39 +105,42 @@ def training_loop(env, neural_net, updateRule, keras=True, eps=1.0, updates=1, e
 	if keras:
 		optimizer = None
 	else:
-		optimizer = None
+		optimizer = optim.SGD(neural_net.parameters(), lr=0.01)
 
 	 
 	rewards_list, memory_buffer = [], collections.deque( maxlen=1000 )
 	averaged_rewards = []
 	for ep in range(episodes):
 
-		#TODO: reset the environment and obtain the initial state
-		state = None 
+		state = env.reset()[0]
+
 		ep_reward = 0
+
 		while True:
 
 			#TODO: select the action to perform exploiting an epsilon-greedy strategy
-			action = None 
+			action = env.action_space.sample() 
 
 			#TODO: update epsilon value
-			eps *= ...
+			#eps *= ...
 
 			#TODO: Perform the action, store the data in the memory buffer and update the reward
-			memory_buffer.append(None)
-			ep_reward += None
+			next_state, reward, terminated, truncated, info = env.step(action)
+			done = terminated or truncated
+
+			memory_buffer.append([state, action, reward, next_state, done])
+			ep_reward += reward
 
 			# Perform the actual training
 			for _ in range(updates):
-				#TODO: call the update rule...
-				pass
+				DQNupdate(neural_net, keras, memory_buffer, optimizer)
 				
 
 			#TODO: modify the exit condition for the episode
-			if False: break
+			if done: break
 
 			#TODO: update the current state
-			state = None
+			state = next_state
 
 		# Update the reward list to return
 		rewards_list.append(ep_reward)
@@ -157,20 +166,22 @@ def DQNupdate(neural_net, keras, memory_buffer, optimizer, batch_size=32, gamma=
 	for idx in indices: 
 
 		#TODO: extract data from the buffer 
-		state, action, reward, next_state, done = None, None, None, None, None
+		state, action, reward, next_state, done = memory_buffer[idx]
 
 		#TODO: compute the target for the training
 		if keras:
 			target = None
 		else:
-			target = None
+			target = neural_net(torch.tensor(state))
 
 		
 		#TODO: update target using the update rule...
 		if done:
-			pass
+			target[action] = reward
 		else:
-			pass
+			max_q = np.max(neural_net(torch.tensor(next_state)).detach().numpy())
+			target[action] = reward + gamma * max_q
+
 
 		#TODO: compute the gradient and perform the backpropagation step using the selected framework
 		if keras:
@@ -178,7 +189,10 @@ def DQNupdate(neural_net, keras, memory_buffer, optimizer, batch_size=32, gamma=
 				objective = mse(neural_net, state, target)
 
 		else:
-			pass
+			objective = mse(neural_net, torch.tensor(state), target)
+			optimizer.zero_grad()
+			objective.backward()
+			optimizer.step()
 
 
 def main():

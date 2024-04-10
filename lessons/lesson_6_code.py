@@ -41,7 +41,7 @@ def dynaQ( environment, maxiters=250, n=10, eps=0.3, alfa=0.3, gamma=0.99 ):
 	M = numpy.array([[[None, None] for _ in range(environment.action_space)] for _ in range(environment.observation_space)])
 	
 	for _ in range(maxiters):
-		"""
+		""" # CODED IN AN ALTERNATIVE WAY
 		s = environment.random_initial_state()
 		a = epsilon_greedy(Q, s, eps)
 		s1 = environment.sample(a, s)
