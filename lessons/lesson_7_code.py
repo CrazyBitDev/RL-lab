@@ -167,7 +167,7 @@ class TorchModel(nn.Module):
 	def forward(self, x):
 		x = F.relu(self.fc1(x))
 		for layer_idx in range(2, self.hidden_layers+2):
-			x = F.relu(self[f"fc{layer_idx}"](x))
+			x = F.relu(getattr(self, f"fc{layer_idx}")(x))
 		x = self.output(x)
 		return x
 	
@@ -230,9 +230,13 @@ def train_DNN_keras(model, memory_buffer, epoch=20):
 	dataset_input = np.vstack(memory_buffer[:, 2])
 	target = np.vstack(memory_buffer[:, 3])
 
-	#
-	# YOUR CODE HERE!
-	#
+	for epoch_num in range(epoch):
+		with tf.GradientTape() as tape:
+			output = model(np.array(dataset_input))
+			loss = mse(model, np.array(dataset_input), np.array(target))
+		grads = tape.gradient(loss, model.trainable_variables)
+		optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
 	return model
 
 	
@@ -259,9 +263,15 @@ def train_DNN_torch(model, memory_buffer, epoch=20):
 	dataset_input = np.vstack(memory_buffer[:, 2])
 	target = np.vstack(memory_buffer[:, 3])
 
-	#
-	# YOUR CODE HERE!
-	#
+	model.train()
+
+	for epoch_num in range(epoch):
+		optimizer.zero_grad()
+		output = model(torch.from_numpy(dataset_input).float())
+		loss = loss_fn(output, torch.from_numpy(target).float())
+		loss.backward()
+		optimizer.step()
+
 	return model
 
 	
@@ -306,6 +316,7 @@ def main():
 	print("\nC) Collect a dataset from the interaction with the environment")
 	env = GridWorld()
 	memory_buffer = collect_random_trajectories(env, num_episodes=10)
+	print(f"Dataset collected: {memory_buffer.shape} samples")
 	inp = np.array([[0], [48]])
 
 	# PART 4) Train the DNN to predict the reward of given the state
@@ -316,12 +327,13 @@ def main():
 	print(f"\tstate {inp[0][0]} => reward: {out[0][0]} ")
 	print(f"\tstate {inp[1][0]} => reward: {out[1][0]} ")
 	
-
+	
 	trained_dnn_model_keras = train_DNN_keras(dnn_model_keras, memory_buffer, epoch=2000)
 	out = trained_dnn_model_keras(inp).numpy()
 	print("Post Training Keras Reward Prediction:")
 	print(f"\tstate {inp[0][0]} => reward: {out[0][0]} ")
 	print(f"\tstate {inp[1][0]} => reward: {out[1][0]} ")
+	
 
 	trained_dnn_model_torch = train_DNN_torch(dnn_model_torch, memory_buffer, epoch=2000)
 	out = trained_dnn_model_torch(torch.from_numpy(inp).type(torch.float)).detach().numpy()
