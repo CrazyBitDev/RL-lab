@@ -119,11 +119,19 @@ def training_loop(env, neural_net, updateRule, keras=True, eps=1.0, updates=1, e
 		while True:
 
 			#TODO: select the action to perform exploiting an epsilon-greedy strategy
-			action = env.action_space.sample() 
+			#action = env.action_space.sample() 
+			if np.random.rand() < eps:
+				if keras:
+					pass
+				else:
+					action = neural_net(torch.tensor(state)).argmax().item()
+			else:
+				action = np.random.randint(2)
 
 			#TODO: update epsilon value
 			#eps *= ...
-
+			eps *= 0.99
+   
 			#TODO: Perform the action, store the data in the memory buffer and update the reward
 			next_state, reward, terminated, truncated, info = env.step(action)
 			done = terminated or truncated
@@ -133,7 +141,7 @@ def training_loop(env, neural_net, updateRule, keras=True, eps=1.0, updates=1, e
 
 			# Perform the actual training
 			for _ in range(updates):
-				DQNupdate(neural_net, keras, memory_buffer, optimizer)
+				updateRule(neural_net, keras, memory_buffer, optimizer)
 				
 
 			#TODO: modify the exit condition for the episode
@@ -146,6 +154,7 @@ def training_loop(env, neural_net, updateRule, keras=True, eps=1.0, updates=1, e
 		rewards_list.append(ep_reward)
 		averaged_rewards.append(np.mean(rewards_list))
 		print( f"episode {ep:2d}: mean reward: {averaged_rewards[-1]:3.2f}, eps: {eps:3.2f}" )
+		
 
 	# Close the enviornment and return the rewards list
 	env.close()
@@ -165,21 +174,25 @@ def DQNupdate(neural_net, keras, memory_buffer, optimizer, batch_size=32, gamma=
 	indices = np.random.randint( len(memory_buffer), size=batch_size)
 	for idx in indices: 
 
-		#TODO: extract data from the buffer 
 		state, action, reward, next_state, done = memory_buffer[idx]
 
 		#TODO: compute the target for the training
 		if keras:
 			target = None
 		else:
-			target = neural_net(torch.tensor(state))
+			optimizer.zero_grad()
+			predicted = neural_net(torch.tensor(state))
+			target = torch.clone(predicted)
 
-		
+
 		#TODO: update target using the update rule...
 		if done:
 			target[action] = reward
 		else:
-			max_q = np.max(neural_net(torch.tensor(next_state)).detach().numpy())
+			if keras:
+				max_q = np.max(neural_net([next_state]))
+			else:
+				max_q = np.max(neural_net(torch.tensor(next_state)).detach().numpy())
 			target[action] = reward + gamma * max_q
 
 
@@ -189,8 +202,8 @@ def DQNupdate(neural_net, keras, memory_buffer, optimizer, batch_size=32, gamma=
 				objective = mse(neural_net, state, target)
 
 		else:
-			objective = mse(neural_net, torch.tensor(state), target)
-			optimizer.zero_grad()
+			#objective = F.mse_loss(target, torch.tensor(action).float())
+			objective = F.mse_loss(predicted, target)
 			objective.backward()
 			optimizer.step()
 
@@ -211,17 +224,17 @@ def main():
 
 	print("\nTraining torch model...\n")
 	rewards_torch = []
-	for _ in range(10):
+	for _ in range(5):
 		env = gymnasium.make("CartPole-v1")#, render_mode="human" )
 		neural_net_torch = TorchModel(nInputs, nOutputs, nLayer, nNodes)
 		rewards_torch.append(training_loop(env, neural_net_torch, DQNupdate, keras=False, episodes=training_steps))
 
-	print("\nTraining keras model...\n")
+	"""print("\nTraining keras model...\n")
 	rewards_keras = []
 	for _ in range(10):
 		env = gymnasium.make("CartPole-v1")#, render_mode="human" )
 		neural_net_keras = createDNN_keras(nInputs, nOutputs, nLayer, nNodes)
-		rewards_keras.append(training_loop(env, neural_net_keras, DQNupdate, keras=True, episodes=training_steps))
+		rewards_keras.append(training_loop(env, neural_net_keras, DQNupdate, keras=True, episodes=training_steps))"""
 
 
 	# plotting the results
@@ -234,18 +247,20 @@ def main():
 			data['Mean Reward'].append(reward)
 	df_torch = pd.DataFrame(data)
 
+	"""
 	data_keras = {'Environment Step': [], 'Mean Reward': []}
 	for _, rewards in enumerate(rewards_keras):
 		for step, reward in zip(t, rewards):
 			data_keras['Environment Step'].append(step)
 			data_keras['Mean Reward'].append(reward)
 	df_keras = pd.DataFrame(data_keras)
+	"""
 
 	# Plotting
 	sns.set_style("darkgrid")
 	plt.figure(figsize=(8, 6))  # Set the figure size
 	sns.lineplot(data=df_torch, x='Environment Step', y='Mean Reward', label='torch', errorbar='se')
-	sns.lineplot(data=df_keras, x='Environment Step', y='Mean Reward', label='keras', errorbar='se')
+	#sns.lineplot(data=df_keras, x='Environment Step', y='Mean Reward', label='keras', errorbar='se')
 
 	# Add title and labels
 	plt.title('Comparison Keras and PyTorch on CartPole-v1')
