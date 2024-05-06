@@ -31,11 +31,10 @@ def createDNN( nInputs, nOutputs, nLayer, nNodes ):
 	"""
 	# Initialize the neural network
 	model = Sequential()
-	# ... and crate the input layer ... 
-	# ... adding the hidden layers ...
+	model.add(Dense(nNodes, input_dim=nInputs, activation="relu")) 
 	for _ in range(nLayer):
-		pass
-	# ... and the output layer
+		model.add(Dense(nNodes, activation="relu")) 
+	model.add(Dense(nOutputs, activation="linear")) 
 	model.add(Dense(nOutputs, activation="softmax")) 
 	#
 	return model
@@ -82,11 +81,13 @@ class TorchModel(nn.Module):
 		self.nLayer = nLayer
 
 		# input layer
-		self.fc1 = ... #TODO
+		self.fc1 = nn.Linear(nInputs, nNodes)
+
 
 		#hidden layers
 		for i in range(nLayer):
-			pass
+			layer_name = f"fc{i+2}"
+			self.add_module(layer_name, nn.Linear(nNodes, nNodes))  
 
 		#output
 		self.output = nn.Linear(nNodes, nOutputs)
@@ -96,7 +97,8 @@ class TorchModel(nn.Module):
 		for i in range(2, self.nLayer + 2):
 			x = F.relu(getattr(self, f'fc{i}')(x).to(x.dtype))
 		x = self.output(x)
-		return F.softmax(x, dim=1)
+		#return F.softmax(x, dim=1)
+		return F.softmax(x)
 	
 
 
@@ -178,23 +180,30 @@ def training_loop(env, neural_net, updateRule, keras=True, total_episodes=1500, 
 	for episode in range(total_episodes):
 
 		# Reset the environment and the episode reward before the episode
-		state = None  #TODO
+		#state = None
+		state = env.reset()[0]
 		ep_reward = 0
-		memory_buffer.append([])
+		#memory_buffer.append([])
 
 		while True:
 
 			# Select the action to perform
-			distribution = None # TODO
-			action = None #TODO
+			if not keras:
+				distribution = neural_net(torch.tensor(state).reshape(-1, 4)).detach().numpy()[0]
+
+			action = np.random.choice(env.action_space.n, p=distribution)
 		
 			# Perform the action, store the data in the memory buffer and update the reward
-			#TODO
+			next_state, reward, terminated, truncated, info = env.step(action)
+			done = terminated or truncated
+
+			memory_buffer.append([state, action, reward, next_state, done])
+
+			ep_reward += reward
 
 			# Exit condition for the episode
-			done = False #TODO
 			if done: break
-			state = None
+			state = next_state
 
 		# Update the reward list to return
 		reward_queue.append(ep_reward)
@@ -203,14 +212,14 @@ def training_loop(env, neural_net, updateRule, keras=True, total_episodes=1500, 
 
 		
 		# An episode is over,then update
-		# TODO
 		if not baseline:
-			pass
+			REINFORCE(neural_net, keras, memory_buffer, gamma, optimizer, baseline)
 		else:
-			pass
+			value_net = createValueDNN() if keras else ValueModel()
+			REINFORCE(neural_net, keras, memory_buffer, gamma, optimizer, baseline, value_net, optimizer_v)
 		
 		# clean the memory buffer
-		memory_buffer = None #TODO
+		memory_buffer = []
 
 	# Close the enviornment and return the rewards list
 	env.close()
@@ -223,33 +232,40 @@ def REINFORCE(neural_net, keras, memory_buffer, gamma, optimizer, baseline, valu
 	Main update rule for the REINFORCE process, the naive implementation of the policy-gradient theorem.
 
 	"""
+
+	states = []
+	actions = []
+	rewards = []
 	
 	for ep in range(len(memory_buffer)):
 		# Extraction of the information from the buffer (for the considered episode)
-		#TODO
-		states = None
-		actions = None
-		rewards = None
+		# memory_buffer.append([state, action, reward, next_state, done])
+		states.append(memory_buffer[ep][0])
+		actions.append(memory_buffer[ep][1])
+		rewards.append(memory_buffer[ep][2])
 
 	# Iterate over all the trajectories considered
  	# calculate the return G reversely using reward-to-go tecnique
-  	#TODO
-	G = None
-	
+	G =  []
+	g = 0
+
+	for r in reversed(rewards):
+		g = gamma * g + r
+		G.insert(0, g)	
 	
 
 	if not baseline:
 		if not keras:
 			for t in range(len(rewards)):
-				state = None
-				action = None
-				g = None
+				state = states[t]
+				action = actions[t]
+				g = G[t]
 
-				
-				a_prob = None #TODO
-				policy_loss = None #TODO
-				#TODO
-				...
+				a_prob = neural_net(torch.tensor(state))
+				policy_loss = -gamma**t * g * np.log(a_prob[action])
+				optimizer.zero_grad()
+				policy_loss.backward()
+				optimizer.step()
 		else:
 			for t in range(len(rewards)):
 				state = None
@@ -265,20 +281,24 @@ def REINFORCE(neural_net, keras, memory_buffer, gamma, optimizer, baseline, valu
 	else:
 		if not keras: 
 			for t in range(len(rewards)):
-				state = None
-				action = None
-				g = None
+				state = states[t]
+				action = actions[t]
+				g = G[t]
 
+				v_s = value_net(torch.tensor(state))
 				
-				a_prob = None #TODO
-				policy_loss = None #TODO
-				#TODO
-				...
+				a_prob = neural_net(torch.tensor(state))
+				policy_loss = -gamma**t * (g-v_s) * torch.log(a_prob[action])
+				
+				optimizer.zero_grad()
+				policy_loss.backward(retain_graph=True)
+				optimizer.step()
 
 				# Update value function
-				value_loss = None #TODO
-				#TODO
-				...
+				value_loss = F.mse_loss(v_s, torch.tensor([g]))
+				optimizer_v.zero_grad()
+				value_loss.backward()
+				optimizer_v.step()
 
 		else:
 			for t in range(len(rewards)):
@@ -319,7 +339,7 @@ def main():
 	nOutputs=2
 	nLayer=2
 	nNodes=32
-	use_torch = False 
+	use_torch = True 
  
 	if use_torch:
 		print("\nTraining torch model using REINFORCE baseline...\n")
